@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中臺科技大學 - 停車收費管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ctustBlue: '#12488B',
+                        ctustYellow: '#F8D210',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+
+    <!-- Navbar / Header -->
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <!-- 模擬校徽 -->
+                <div class="w-12 h-12 rounded-full border-2 border-red-700 flex items-center justify-center text-red-700 font-bold text-xl relative">
+                    <div class="absolute inset-0 flex items-center justify-center text-xs opacity-50">CTUST</div>
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-widest text-gray-900">中臺科技大學</h1>
+                    <p class="text-xs text-gray-500 font-serif">Central Taiwan University of Science and Technology</p>
+                </div>
+            </div>
+            <div class="text-ctustBlue font-bold text-lg sm:text-xl flex items-center gap-2">
+                <i class="fa-solid fa-phone"></i>
+                連絡電話：04-22391647轉8353
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- 左側：收費計算系統 -->
+        <section class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 flex flex-col h-full border-t-4 border-ctustBlue">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-ctustBlue">
+                <i class="fa-solid fa-car"></i> 停車費試算與繳費
+            </h2>
+
+            <div class="space-y-5 flex-grow">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">車牌號碼</label>
+                    <input type="text" id="plateNumber" placeholder="例如: ABC-1234" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ctustBlue focus:border-ctustBlue outline-none uppercase transition">
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">入場時間</label>
+                        <input type="datetime-local" id="entryTime" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ctustBlue focus:border-ctustBlue outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">離場時間</label>
+                        <input type="datetime-local" id="exitTime" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ctustBlue focus:border-ctustBlue outline-none transition">
+                    </div>
+                </div>
+
+                <!-- 錯誤訊息區塊 -->
+                <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline" id="errorText">錯誤訊息</span>
+                </div>
+
+                <button onclick="calculateFee()" class="w-full bg-ctustBlue hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-calculator"></i> 計算停車費
+                </button>
+
+                <!-- 計算結果顯示區塊 -->
+                <div id="resultBox" class="hidden mt-6 bg-gray-50 rounded-lg border border-gray-200 p-5">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">計費明細</h3>
+                    <div class="space-y-2 text-gray-600">
+                        <div class="flex justify-between">
+                            <span>車牌號碼：</span>
+                            <span id="resPlate" class="font-bold text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>停車時長：</span>
+                            <span id="resDuration" class="font-bold text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>適用計費：</span>
+                            <span class="text-blue-600">每小時 30 元 / 當日最高 240 元</span>
+                        </div>
+                        <div class="flex justify-between pt-4 border-t border-gray-200 mt-4 items-center">
+                            <span class="font-bold text-gray-800 text-lg">應繳總額：</span>
+                            <span id="resFee" class="font-bold text-red-600 text-3xl">NT$ 0</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openPaymentModal()" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen"></i> 前往線上繳費
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：數位告示牌 (依據圖片重現) -->
+        <section class="bg-ctustBlue text-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full border-4 border-white ring-4 ring-gray-200">
+            <!-- 價格區塊 -->
+            <div class="p-6 md:p-8 space-y-4">
+                <div class="bg-ctustYellow text-red-700 font-bold text-4xl sm:text-5xl py-4 px-6 rounded shadow flex justify-between items-center tracking-widest">
+                    <span>每小時</span>
+                    <span>30元</span>
+                </div>
+                <div class="bg-ctustYellow text-red-700 font-bold text-4xl sm:text-5xl py-4 px-6 rounded shadow flex justify-between items-center tracking-widest">
+                    <span class="text-3xl sm:text-4xl">當日最高</span>
+                    <span>240元</span>
+                </div>
+            </div>
+
+            <!-- 規範說明 -->
+            <div class="px-6 md:px-8 pb-8 space-y-4 flex-grow">
+                <div class="flex gap-2">
+                    <span class="font-bold">一、</span>
+                    <p class="leading-relaxed">收費標準：每小時收場地維護費參拾元 (停車未滿半小時不收費，超過半小時以一小時計)。</p>
+                </div>
+                <div class="flex gap-2">
+                    <span class="font-bold">二、</span>
+                    <p class="leading-relaxed">停車種類：小型車、機車、大型重機。</p>
+                </div>
+                <div class="flex gap-2">
+                    <span class="font-bold">三、</span>
+                    <div class="space-y-2">
+                        <p class="font-bold">管理規範：</p>
+                        <ol class="list-decimal pl-5 space-y-2 leading-relaxed text-blue-100">
+                            <li>車輛離場前，請先利用線上繳費平台或自助繳費機完成繳費後再離場。</li>
+                            <li>本校僅提供車輛臨時停車，不可過夜停放，停車費為場地維護費用，恕不負責車輛遺失、毀損及車內物品保管之責。</li>
+                            <li>本公告事項如有未盡事宜，悉依本校汽機車收費及管理辦法與相關法令規定辦理。</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部多元支付推廣 -->
+            <div class="bg-gray-100 text-gray-800 p-4 border-t-4 border-ctustYellow">
+                <h3 class="text-center font-bold text-xl md:text-2xl text-gray-700 mb-4 tracking-wider">
+                    本校推行無現金校園 請多使用多元支付
+                </h3>
+                <div class="flex flex-wrap justify-center items-center gap-4 opacity-90">
+                    <!-- 模擬支付 Logo -->
+                    <span class="px-3 py-1 bg-white border border-gray-300 rounded font-bold text-blue-500 shadow-sm"><i class="fa-solid fa-id-card"></i> 悠遊卡</span>
+                    <span class="px-3 py-1 bg-white border border-gray-300 rounded font-bold text-green-500 shadow-sm"><i class="fa-solid fa-id-card-clip"></i> 一卡通</span>
+                    <span class="px-3 py-1 bg-green-500 text-white rounded font-bold shadow-sm">LINE Pay</span>
+                    <span class="px-3 py-1 bg-blue-800 text-white rounded font-bold italic shadow-sm">VISA</span>
+                    <span class="px-3 py-1 bg-red-600 text-white rounded font-bold shadow-sm">MasterCard</span>
+                    <span class="px-3 py-1 bg-white border border-gray-300 rounded font-bold text-red-500 shadow-sm">台灣Pay</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 繳費模擬 Modal -->
+    <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-ctustBlue text-white py-4 px-6 flex justify-between items-center">
+                <h3 class="font-bold text-xl">多元支付結帳</h3>
+                <button onclick="closePaymentModal()" class="text-white hover:text-gray-200 transition">
+                    <i class="fa-solid fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <p class="text-gray-500 mb-1">本次應繳納金額</p>
+                    <div id="modalAmount" class="text-4xl font-bold text-red-600">NT$ 0</div>
+                </div>
+                <div class="space-y-3">
+                    <p class="font-semibold text-gray-700 text-sm">請選擇支付方式：</p>
+                    <button class="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-lg hover:bg-green-50 text-green-600 font-bold transition" onclick="processPayment('LINE Pay')">
+                        <i class="fa-brands fa-line text-xl"></i> 使用 LINE Pay
+                    </button>
+                    <button class="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-lg hover:bg-blue-50 text-blue-700 font-bold transition" onclick="processPayment('信用卡')">
+                        <i class="fa-regular fa-credit-card text-xl"></i> 信用卡 (VISA/MasterCard/JCB)
+                    </button>
+                    <button class="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-bold transition" onclick="processPayment('電子票證')">
+                        <i class="fa-solid fa-sd-card text-xl"></i> 電子票證 (悠遊卡/一卡通)
+                    </button>
+                    <button class="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-lg hover:bg-red-50 text-red-600 font-bold transition" onclick="processPayment('台灣Pay')">
+                        <i class="fa-solid fa-qrcode text-xl"></i> 台灣Pay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 繳費成功 Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500 text-4xl">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 class="font-bold text-2xl text-gray-800 mb-2">繳費成功！</h3>
+            <p class="text-gray-600 mb-6">感謝您的使用，請於 15 分鐘內離場，祝您行車平安。</p>
+            <button onclick="resetSystem()" class="w-full bg-ctustBlue hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition shadow-md">
+                回首頁
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 初始化預設時間 (幫助使用者快速測試)
+        window.onload = () => {
+            const now = new Date();
+            const entry = new Date(now.getTime() - (2 * 60 * 60 * 1000) - (15 * 60 * 1000)); // 預設提早 2小時15分 入場
+            
+            // 格式化為 datetime-local 接受的 YYYY-MM-DDThh:mm
+            const formatForInput = (date) => {
+                return date.getFullYear() + '-' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(date.getDate()).padStart(2, '0') + 'T' + 
+                       String(date.getHours()).padStart(2, '0') + ':' + 
+                       String(date.getMinutes()).padStart(2, '0');
+            };
+
+            document.getElementById('entryTime').value = formatForInput(entry);
+            document.getElementById('exitTime').value = formatForInput(now);
+        };
+
+        // 顯示錯誤訊息
+        function showError(msg) {
+            const errorBox = document.getElementById('errorMessage');
+            document.getElementById('errorText').innerText = msg;
+            errorBox.classList.remove('hidden');
+            document.getElementById('resultBox').classList.add('hidden');
+        }
+
+        // 隱藏錯誤訊息
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        // 計算停車費邏輯
+        function calculateFee() {
+            hideError();
+            const plateInput = document.getElementById('plateNumber').value.trim();
+            const entryVal = document.getElementById('entryTime').value;
+            const exitVal = document.getElementById('exitTime').value;
+
+            if (!plateInput) {
+                showError('請輸入車牌號碼！');
+                return;
+            }
+            if (!entryVal || !exitVal) {
+                showError('請完整選擇入場與離場時間！');
+                return;
+            }
+
+            const entryDate = new Date(entryVal);
+            const exitDate = new Date(exitVal);
+
+            if (exitDate < entryDate) {
+                showError('離場時間不可早於入場時間！');
+                return;
+            }
+
+            // 計算差異（毫秒轉分鐘）
+            const diffMs = exitDate - entryDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            // 格式化停車時間字串
+            const totalDays = Math.floor(diffMins / 1440);
+            const displayHours = Math.floor((diffMins % 1440) / 60);
+            const displayMins = diffMins % 60;
+            
+            let durationText = '';
+            if (totalDays > 0) durationText += `${totalDays} 天 `;
+            if (displayHours > 0) durationText += `${displayHours} 小時 `;
+            durationText += `${displayMins} 分鐘`;
+
+            let finalFee = 0;
+
+            // 收費邏輯：未滿半小時不收費，超過半小時以一小時計。每小時30元。當日最高240元。
+            if (diffMins <= 30) {
+                finalFee = 0;
+            } else {
+                // 將總時間切分為天數(24小時制)計算，符合「當日最高240元」
+                let remainderMins = diffMins % 1440;
+                
+                // 滿天的費用 (每天上限 240)
+                let dayFee = totalDays * 240; 
+                
+                // 剩餘分鐘數費用
+                let remainderFee = Math.ceil(remainderMins / 60) * 30;
+                
+                // 剩餘時間費用若超過單日最高，以單日最高計
+                if (remainderFee > 240) {
+                    remainderFee = 240;
+                }
+
+                finalFee = dayFee + remainderFee;
+            }
+
+            // 更新 UI
+            document.getElementById('resPlate').innerText = plateInput.toUpperCase();
+            document.getElementById('resDuration').innerText = durationText;
+            document.getElementById('resFee').innerText = `NT$ ${finalFee}`;
+            
+            // 存入全域變數供 Modal 使用
+            window.currentFee = finalFee;
+
+            document.getElementById('resultBox').classList.remove('hidden');
+        }
+
+        function openPaymentModal() {
+            if (window.currentFee === 0) {
+                // 如果免費，直接當作繳費成功
+                document.getElementById('successModal').classList.remove('hidden');
+                document.getElementById('successModal').classList.add('flex');
+                return;
+            }
+            document.getElementById('modalAmount').innerText = `NT$ ${window.currentFee}`;
+            document.getElementById('paymentModal').classList.remove('hidden');
+            document.getElementById('paymentModal').classList.add('flex');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            document.getElementById('paymentModal').classList.remove('flex');
+        }
+
+        function processPayment(method) {
+            // 模擬金流處理延遲
+            closePaymentModal();
+            setTimeout(() => {
+                document.getElementById('successModal').classList.remove('hidden');
+                document.getElementById('successModal').classList.add('flex');
+            }, 500);
+        }
+
+        function resetSystem() {
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('successModal').classList.remove('flex');
+            
+            document.getElementById('plateNumber').value = '';
+            document.getElementById('resultBox').classList.add('hidden');
+            
+            // 更新離場時間為當下
+            const now = new Date();
+            const formatForInput = (date) => {
+                return date.getFullYear() + '-' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(date.getDate()).padStart(2, '0') + 'T' + 
+                       String(date.getHours()).padStart(2, '0') + ':' + 
+                       String(date.getMinutes()).padStart(2, '0');
+            };
+            document.getElementById('exitTime').value = formatForInput(now);
+            // 入場時間歸零或留著皆可，這裡重置為同時間
+            document.getElementById('entryTime').value = formatForInput(now);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
